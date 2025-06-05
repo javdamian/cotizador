@@ -13,6 +13,7 @@ import {
   Typography,
   Drawer,
   IconButton,
+  CircularProgress,
 } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
@@ -34,11 +35,25 @@ export default function Home() {
   const [carrito, setCarrito] = useState<Producto[]>([]);
   const [comision, setComision] = useState<number | null>(null);
   const [openCarrito, setOpenCarrito] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loadingComision, setLoadingComision] = useState(false);
+  const [errorComision, setErrorComision] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch('http://localhost:3001/api/products')
-      .then(res => res.json())
-      .then(data => setProductos(data));
+      .then(res => {
+        if (!res.ok) throw new Error('Error al obtener productos');
+        return res.json();
+      })
+      .then(data => setProductos(data))
+      .catch(err => {
+        setError('No se pudieron cargar los productos');
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const productosFiltrados = productos.filter(producto =>
@@ -74,46 +89,57 @@ export default function Home() {
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
       />
-      <TableContainer component={Paper} sx={{ maxWidth: '100vw', overflowX: 'auto' }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Nombre</TableCell>
-              <TableCell>SKU</TableCell>
-              <TableCell>Categoría</TableCell>
-              <TableCell>Precio</TableCell>
-              <TableCell align="center">Acción</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {productosFiltrados.map(producto => (
-              <TableRow key={producto._id}>
-                <TableCell>{producto.nombre}</TableCell>
-                <TableCell>{producto.sku}</TableCell>
-                <TableCell>{producto.categoria}</TableCell>
-                <TableCell>${producto.precioBase}</TableCell>
-                <TableCell align="center">
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<AddShoppingCartIcon />}
-                    onClick={() => agregarAlCarrito(producto)}
-                  >
-                    Añadir
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {productosFiltrados.length === 0 && (
+      {error && (
+        <Typography color="error" sx={{ mb: 2 }}>
+          {error}
+        </Typography>
+      )}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', margin: 32 }}>
+          <CircularProgress />
+        </div>
+      ) : (
+        <TableContainer component={Paper} sx={{ maxWidth: '100vw', overflowX: 'auto' }}>
+          <Table size="small">
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={5} align="center">
-                  No se encontraron productos.
-                </TableCell>
+                <TableCell>Nombre</TableCell>
+                <TableCell>SKU</TableCell>
+                <TableCell>Categoría</TableCell>
+                <TableCell>Precio</TableCell>
+                <TableCell align="center">Acción</TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {productosFiltrados.map(producto => (
+                <TableRow key={producto._id}>
+                  <TableCell>{producto.nombre}</TableCell>
+                  <TableCell>{producto.sku}</TableCell>
+                  <TableCell>{producto.categoria}</TableCell>
+                  <TableCell>${producto.precioBase}</TableCell>
+                  <TableCell align="center">
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<AddShoppingCartIcon />}
+                      onClick={() => agregarAlCarrito(producto)}
+                    >
+                      Añadir
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {productosFiltrados.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    No se encontraron productos.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       {/* Botón flotante para abrir el carrito */}
       <IconButton
@@ -139,7 +165,7 @@ export default function Home() {
           sx: {
             width: { xs: '100vw', sm: 400 },
             maxWidth: '100vw',
-            p: { xs: 0.5, sm: 3 }, // Menos padding en móviles
+            p: { xs: 0.5, sm: 3 },
           },
         }}
       >
@@ -207,25 +233,41 @@ export default function Home() {
                 Comisión del Vendedor: $
                 {comision !== null ? comision.toFixed(2) : '—'}
               </Typography>
+              {errorComision && (
+                <Typography color="error" sx={{ mt: 1 }}>
+                  {errorComision}
+                </Typography>
+              )}
               <Button
                 variant="contained"
                 color="secondary"
                 sx={{ mt: 2, width: { xs: '100%', sm: 'auto' } }}
+                disabled={loadingComision}
                 onClick={async () => {
+                  setLoadingComision(true);
+                  setErrorComision(null);
                   const subtotal = carrito.reduce(
                     (acc, p) => acc + (p.cantidad || 1) * p.precioBase,
                     0
                   );
-                  const res = await fetch('http://localhost:3001/api/comision', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ subtotal }),
-                  });
-                  const data = await res.json();
-                  setComision(data.comision);
+                  try {
+                    const res = await fetch('http://localhost:3001/api/comision', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ subtotal }),
+                    });
+                    if (!res.ok) throw new Error('Error al calcular comisión');
+                    const data = await res.json();
+                    setComision(data.comision);
+                  } catch (err) {
+                    setErrorComision('No se pudo calcular la comisión');
+                    console.error(err);
+                  } finally {
+                    setLoadingComision(false);
+                  }
                 }}
               >
-                Calcular Comisión
+                {loadingComision ? <CircularProgress size={24} color="inherit" /> : 'Calcular Comisión'}
               </Button>
             </>
           )}
