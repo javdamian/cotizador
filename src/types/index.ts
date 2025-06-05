@@ -1,0 +1,1 @@
+// This file exports TypeScript interfaces and types used throughout the application, providing type safety for props and state.
