@@ -11,7 +11,11 @@ import {
   Paper,
   Button,
   Typography,
+  Drawer,
+  IconButton,
 } from '@mui/material';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 
 type Producto = {
   _id: string;
@@ -21,6 +25,7 @@ type Producto = {
   categoria: string;
   precioBase: number;
   especificaciones: any;
+  cantidad?: number;
 };
 
 export default function Home() {
@@ -28,7 +33,8 @@ export default function Home() {
   const [busqueda, setBusqueda] = useState('');
   const [carrito, setCarrito] = useState<Producto[]>([]);
   const [comision, setComision] = useState<number | null>(null);
- 
+  const [openCarrito, setOpenCarrito] = useState(false);
+
   useEffect(() => {
     fetch('http://localhost:3001/api/products')
       .then(res => res.json())
@@ -42,12 +48,22 @@ export default function Home() {
   );
 
   const agregarAlCarrito = (producto: Producto) => {
-    setCarrito([...carrito, producto]);
+    const idx = carrito.findIndex(p => p._id === producto._id);
+    if (idx !== -1) {
+      setCarrito(carrito =>
+        carrito.map((p, i) =>
+          i === idx ? { ...p, cantidad: (p.cantidad || 1) + 1 } : p
+        )
+      );
+    } else {
+      setCarrito([...carrito, { ...producto, cantidad: 1 }]);
+    }
+    setOpenCarrito(true);
   };
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.3rem', sm: '2rem' } }}>
         Productos de Audífonos
       </Typography>
       <TextField
@@ -58,8 +74,8 @@ export default function Home() {
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
       />
-      <TableContainer component={Paper}>
-        <Table>
+      <TableContainer component={Paper} sx={{ maxWidth: '100vw', overflowX: 'auto' }}>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Nombre</TableCell>
@@ -80,9 +96,10 @@ export default function Home() {
                   <Button
                     variant="contained"
                     color="primary"
+                    startIcon={<AddShoppingCartIcon />}
                     onClick={() => agregarAlCarrito(producto)}
                   >
-                    Añadir al Carrito
+                    Añadir
                   </Button>
                 </TableCell>
               </TableRow>
@@ -97,87 +114,123 @@ export default function Home() {
           </TableBody>
         </Table>
       </TableContainer>
-      {carrito.length > 0 && (
-      <Paper sx={{ mt: 4, p: 2 }}>
-        <Typography variant="h5" gutterBottom>
-          Cotización
-        </Typography>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Nombre</TableCell>
-                <TableCell>Precio Base</TableCell>
-                <TableCell>Cantidad</TableCell>
-                <TableCell>Subtotal</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {carrito.map((producto, idx) => (
-                <TableRow key={producto._id}>
-                  <TableCell>{producto.nombre}</TableCell>
-                  <TableCell>${producto.precioBase}</TableCell>
-                  <TableCell>
-                    <TextField
-                      type="number"
-                      size="small"
-                      value={(producto as any).cantidad || 1}
-                      inputProps={{ min: 1 }}
-                      onChange={e => {
-                        const cantidad = Math.max(1, Number(e.target.value));
-                        setCarrito(carrito =>
-                          carrito.map((p, i) =>
-                            i === idx ? { ...p, cantidad } : p
-                          )
-                        );
-                      }}
-                      style={{ width: 60 }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    ${((producto as any).cantidad || 1) * producto.precioBase}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        {/* Resumen */}
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Subtotal: $
-          {carrito.reduce(
-            (acc, p) => acc + ((p as any).cantidad || 1) * p.precioBase,
-            0
-          ).toFixed(2)}
-        </Typography>
-        <Typography variant="h6" sx={{ mt: 1 }}>
-          Comisión del Vendedor: $
-          {comision !== null ? comision.toFixed(2) : '—'}
-        </Typography>
-        <Button
-          variant="contained"
-          color="secondary"
-          sx={{ mt: 2 }}
-          onClick={async () => {
-            // Llama al backend para calcular la comisión
-            const subtotal = carrito.reduce(
-              (acc, p) => acc + ((p as any).cantidad || 1) * p.precioBase,
-              0
-            );
-            const res = await fetch('http://localhost:3001/api/comision', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ subtotal }),
-            });
-            const data = await res.json();
-            setComision(data.comision);
-          }}
-        >
-          Calcular Comisión
-        </Button>
-      </Paper>
-    )}
+
+      {/* Botón flotante para abrir el carrito */}
+      <IconButton
+        color="primary"
+        sx={{
+          position: 'fixed',
+          bottom: { xs: 16, sm: 32 },
+          right: { xs: 16, sm: 32 },
+          zIndex: 1300,
+          p: { xs: 1, sm: 2 },
+        }}
+        onClick={() => setOpenCarrito(true)}
+      >
+        <ShoppingCartIcon fontSize="large" />
+      </IconButton>
+
+      {/* Drawer lateral para el carrito */}
+      <Drawer
+        anchor="right"
+        open={openCarrito}
+        onClose={() => setOpenCarrito(false)}
+        PaperProps={{
+          sx: {
+            width: { xs: '100vw', sm: 400 },
+            maxWidth: '100vw',
+            p: 3,
+          },
+        }}
+      >
+        <div>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }}
+          >
+            Cotización
+          </Typography>
+          {carrito.length === 0 ? (
+            <Typography variant="body1">El carrito está vacío.</Typography>
+          ) : (
+            <>
+              <TableContainer sx={{ maxWidth: '100vw', overflowX: 'auto' }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Nombre</TableCell>
+                      <TableCell>Precio Base</TableCell>
+                      <TableCell>Cantidad</TableCell>
+                      <TableCell>Subtotal</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {carrito.map((producto, idx) => (
+                      <TableRow key={producto._id}>
+                        <TableCell>{producto.nombre}</TableCell>
+                        <TableCell>${producto.precioBase}</TableCell>
+                        <TableCell>
+                          <TextField
+                            type="number"
+                            size="small"
+                            value={producto.cantidad || 1}
+                            inputProps={{ min: 1 }}
+                            onChange={e => {
+                              const cantidad = Math.max(1, Number(e.target.value));
+                              setCarrito(carrito =>
+                                carrito.map((p, i) =>
+                                  i === idx ? { ...p, cantidad } : p
+                                )
+                              );
+                            }}
+                            style={{ width: 60 }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          ${(producto.cantidad || 1) * producto.precioBase}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              {/* Resumen */}
+              <Typography variant="h6" sx={{ mt: 2 }}>
+                Subtotal: $
+                {carrito.reduce(
+                  (acc, p) => acc + (p.cantidad || 1) * p.precioBase,
+                  0
+                ).toFixed(2)}
+              </Typography>
+              <Typography variant="h6" sx={{ mt: 1 }}>
+                Comisión del Vendedor: $
+                {comision !== null ? comision.toFixed(2) : '—'}
+              </Typography>
+              <Button
+                variant="contained"
+                color="secondary"
+                sx={{ mt: 2 }}
+                onClick={async () => {
+                  const subtotal = carrito.reduce(
+                    (acc, p) => acc + (p.cantidad || 1) * p.precioBase,
+                    0
+                  );
+                  const res = await fetch('http://localhost:3001/api/comision', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subtotal }),
+                  });
+                  const data = await res.json();
+                  setComision(data.comision);
+                }}
+              >
+                Calcular Comisión
+              </Button>
+            </>
+          )}
+        </div>
+      </Drawer>
     </Container>
-    
   );
 }
