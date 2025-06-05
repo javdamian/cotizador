@@ -139,11 +139,11 @@ export default function Home() {
           sx: {
             width: { xs: '100vw', sm: 400 },
             maxWidth: '100vw',
-            p: 3,
+            p: { xs: 0.5, sm: 3 }, // Menos padding en móviles
           },
         }}
       >
-        <div>
+        <div style={{ width: '100%', boxSizing: 'border-box', padding: 8 }}>
           <Typography
             variant="h5"
             gutterBottom
@@ -159,10 +159,10 @@ export default function Home() {
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell>Nombre</TableCell>
-                      <TableCell>Precio Base</TableCell>
-                      <TableCell>Cantidad</TableCell>
-                      <TableCell>Subtotal</TableCell>
+                      <TableCell sx={{ fontSize: { xs: '0.85rem', sm: '1rem' } }}>Nombre</TableCell>
+                      <TableCell sx={{ fontSize: { xs: '0.85rem', sm: '1rem' } }}>Precio Base</TableCell>
+                      <TableCell sx={{ fontSize: { xs: '0.85rem', sm: '1rem' } }}>Cantidad</TableCell>
+                      <TableCell sx={{ fontSize: { xs: '0.85rem', sm: '1rem' } }}>Subtotal</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -210,7 +210,7 @@ export default function Home() {
               <Button
                 variant="contained"
                 color="secondary"
-                sx={{ mt: 2 }}
+                sx={{ mt: 2, width: { xs: '100%', sm: 'auto' } }}
                 onClick={async () => {
                   const subtotal = carrito.reduce(
                     (acc, p) => acc + (p.cantidad || 1) * p.precioBase,
