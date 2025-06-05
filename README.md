@@ -1,59 +1,83 @@
-# Cotizador
+# Cotizador de Audífonos (Frontend)
 
-Cotizador is a web application built using React.js, TypeScript, Next.js, and TailwindCSS. This project aims to provide a user-friendly interface for users to obtain quotes for various services or products.
+Cotizador de Audífonos es una herramienta web que permite a vendedores buscar productos de la industria de audífonos, agregarlos a una cotización, editar cantidades y calcular automáticamente la comisión del vendedor según el subtotal. El sistema utiliza Next.js, React, TypeScript, Material-UI y TailwindCSS.
 
-## Features
+## Casos de Uso
 
-- **Responsive Design**: The application is designed to be fully responsive, ensuring a seamless experience across devices.
-- **Reusable Components**: The project utilizes a component-based architecture, allowing for easy maintenance and scalability.
-- **Type Safety**: TypeScript is used throughout the application to provide type safety and improve developer experience.
-- **TailwindCSS**: The application leverages TailwindCSS for styling, enabling rapid UI development with utility-first CSS.
+1. **Buscar productos:** El vendedor puede buscar productos por nombre, SKU o categoría.
+2. **Agregar al carrito:** El vendedor selecciona productos y los añade al carrito/cotización.
+3. **Editar cantidades:** Puede modificar la cantidad de cada producto (mínimo 1).
+4. **Ver resumen:** Se muestra el subtotal y, al presionar un botón, se calcula la comisión del vendedor usando una lógica definida en el backend.
+
+## Interfaces y Modelos
+
+### TypeScript (Frontend)
+
+```ts
+type Producto = {
+  _id: string;
+  nombre: string;
+  sku: string;
+  descripcion: string;
+  categoria: string;
+  precioBase: number;
+  especificaciones: any;
+  cantidad?: number; // Solo en frontend para cotización
+};
+```
+
+## Endpoints Consumidos
+
+- `GET /api/products` — Obtener todos los productos.
+- `POST /api/comision` — Calcular la comisión del vendedor (envía `{ subtotal }` en el body).
+
+> **Nota:** El backend debe estar corriendo en `http://localhost:3001`.
 
 ## Getting Started
 
-To get started with the Cotizador project, follow these steps:
+Para comenzar con el proyecto Cotizador, sigue estos pasos:
 
-1. **Clone the repository**:
-   ```
+1. **Clona el repositorio:**
+   ```sh
    git clone <repository-url>
    cd Cotizador
    ```
 
-2. **Install dependencies**:
-   ```
+2. **Instala las dependencias:**
+   ```sh
    npm install
    ```
 
-3. **Run the development server**:
-   ```
+3. **Ejecuta el servidor de desarrollo:**
+   ```sh
    npm run dev
    ```
 
-4. **Open your browser**:
-   Navigate to `http://localhost:3000` to view the application.
+4. **Abre tu navegador:**
+   Navega a `http://localhost:3000` para ver la aplicación.
 
 ## Folder Structure
 
 ```
 Cotizador
 ├── src
-│   ├── components        # Reusable React components
-│   ├── pages             # Next.js pages
-│   ├── styles            # Global styles
-│   └── types             # TypeScript types and interfaces
-├── public                # Static assets
-├── tailwind.config.js    # TailwindCSS configuration
-├── postcss.config.js     # PostCSS configuration
-├── next.config.js        # Next.js configuration
-├── tsconfig.json         # TypeScript configuration
-├── package.json          # npm configuration
-└── README.md             # Project documentation
+│   ├── components        # Componentes reutilizables de React
+│   ├── pages             # Páginas de Next.js
+│   ├── styles            # Estilos globales
+│   └── types             # Tipos e interfaces de TypeScript
+├── public                # Recursos estáticos
+├── tailwind.config.js    # Configuración de TailwindCSS
+├── postcss.config.js     # Configuración de PostCSS
+├── next.config.js        # Configuración de Next.js
+├── tsconfig.json         # Configuración de TypeScript
+├── package.json          # Configuración de npm
+└── README.md             # Documentación del proyecto
 ```
 
 ## Contributing
 
-Contributions are welcome! If you have suggestions for improvements or new features, please open an issue or submit a pull request.
+¡Las contribuciones son bienvenidas! Si tienes sugerencias para mejoras o nuevas funcionalidades, por favor abre un issue o envía un pull request.
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+Este proyecto está licenciado bajo la MIT License. Consulta el archivo LICENSE para más detalles.
