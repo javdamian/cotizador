@@ -39,7 +39,7 @@ Para comenzar con el proyecto Cotizador, sigue estos pasos:
 
 1. **Clona el repositorio:**
    ```sh
-   git clone <repository-url>
+   git clone https://github.com/javdamian/cotizador.git
    cd Cotizador
    ```
 
